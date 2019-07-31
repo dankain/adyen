@@ -1,9 +1,10 @@
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
-const privateKey  = fs.readFileSync('sslcert/key.pem', 'utf8');
-const certificate = fs.readFileSync('sslcert/cert.pem', 'utf8');
-const credentials = {key: privateKey, cert: certificate};
+const bodyParser = require('body-parser')
+// const privateKey = fs.readFileSync('sslcert/key.pem', 'utf8');
+// const certificate = fs.readFileSync('sslcert/cert.pem', 'utf8');
+// const credentials = {key: privateKey, cert: certificate};
 
 const express = require('express');
 const axios = require('axios');
@@ -11,13 +12,15 @@ const axios = require('axios');
 const app = express();
 const port = 3000;
 
+app.use( bodyParser.json() );
+
 let paymentMethodsResponse;
 
 axios({
   method: 'post',
   url: 'https://checkout-test.adyen.com/v49/paymentMethods',
   headers: {
-    'x-API-key': '...',
+    'x-API-key': 'API Key',
     'content-type': 'application/json'
   },
   data: {
@@ -38,6 +41,10 @@ axios({
     console.log(error)
   });
 
+app.post('/payments', (req, res) => {
+  console.log('/payments', req.body);
+  res.send('Hello payments API');
+});
 
 app.get('/', (req, res) => res.send(
   '<html>\n' +
@@ -48,18 +55,34 @@ app.get('/', (req, res) => res.send(
      const configuration = {
       locale: "en_GB",
       environment: "test",
-      originKey: "pub.v2.8015643980141000.aHR0cHM6Ly9jYWJpcmkuZGV2LmNvbTo4NDQzLw.2ZouCNFAtSkna0BxEKTebBYuxCj22pUxMtFb3mlCqTI",
+      originKey: "pub.v2.8015643980141000.aHR0cDovL2xvY2FsaG9zdDozMDAw.M_SOk5rKLz9HojaA8Ozog8e0Co6Mw2T4PhyduHkfE9g",
       paymentMethodsResponse: ${JSON.stringify(paymentMethodsResponse)},
     };
     const checkout = new AdyenCheckout(configuration);
     
     const makePayment = data => {
       console.log('makePayment', data);
-    }
+      fetch('/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+      .then(response => {
+        return response.text();
+      })
+      .catch(error => {
+        console.log(error);
+      })
+      .then(text => {
+        console.log(text);
+      });
+    };
         
     const makeDetailsCall = data => {
       console.log('makeDetailsCall', data);
-    }
+    };
     
     const dropin = checkout
     .create('dropin', {
@@ -111,7 +134,7 @@ app.get('/', (req, res) => res.send(
   '</html>'));
 
 const httpServer = http.createServer(app);
-const httpsServer = https.createServer(credentials, app);
+// const httpsServer = https.createServer(credentials, app);
 
-httpServer.listen(8080);
-httpsServer.listen(8443);
+httpServer.listen(3000);
+// httpsServer.listen(8443);
